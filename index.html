@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+    <style media="screen">
+        #sprite{
+            display:none;
+            position:fixed;
+            left:0px;
+            top:0px;
+            width:50px;
+            height:50px;
+            border-radius: 25px;
+            background-color: black;
+        }
+        #canvas{
+            background-color: #dfd;
+        }
+        #plot_button{
+            position: fixed;
+            text-align: center;
+            padding-top: 4px;
+            top:10px;
+            right:20px;
+            width:80px;
+            height:25px;
+            background-color: #5f5;
+            cursor:pointer;
+        }
+        #plot_button:hover{
+            background-color: #000;
+            color: #5f5;
+        }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <canvas id="circlecanvas" ></canvas>
+    <div id="plot_button" onclick="plot()">Plot</div>
+    <script type="text/javascript">
+        window.onload = window.onresize = resize
+
+        var canvas = document.getElementById('canvas')
+        var ctx = canvas.getContext('2d')
+
+        var circlecanvas = document.getElementById('circlecanvas')
+        var circlectx = circlecanvas.getContext('2d')
+
+        var effects = []
+        var trees = []
+        var treewidth = 8
+
+        var player = {
+            width:50,
+            height:50,
+            posx:25,
+            posy:25
+        }
+
+        function resize(){
+            var clientWidth = window.innerWidth || window.clientWidth
+            var clientHeight = window.innerHeight || window.clientHeight
+
+            canvas.width = clientWidth - 20
+            canvas.height = clientHeight - 20
+
+            circlecanvas.width = clientWidth - 20
+            circlecanvas.height = clientHeight - 20
+
+            render()
+        }
+
+        function render(){
+            ctx.clearRect(0,0,canvas.width,canvas.height)
+
+            //draw trees
+            for (var i = 0; i < trees.length; i++) {
+                var posx = trees[i].posx
+                var posy = trees[i].posy
+
+                ctx.fillStyle = '#0d4'
+                ctx.beginPath()
+                ctx.arc(posx,posy,treewidth*.5,0,2*Math.PI)
+                ctx.fill()
+                ctx.closePath()
+            }
+
+            //draw player
+            ctx.fillStyle = '#003'
+            ctx.beginPath()
+            ctx.arc(player.posx,player.posy,player.width*.5,0,2*Math.PI)
+            ctx.fill()
+            ctx.closePath()
+
+            //draw effect
+            for (var i = 0; i < effects.length; i++) {
+                if(!effects[i].dead){
+                    var age = effects[i].age++
+                    var lifespan = effects[i].lifespan
+                    var posx = effects[i].posx
+                    var posy = effects[i].posy
+
+                    ctx.fillStyle = 'rgba(255,255,255,'+(1-(age/lifespan))+')'
+                    ctx.beginPath()
+                    ctx.arc(player.posx,player.posy,age*4,0,2*Math.PI)
+                    ctx.fill()
+                    ctx.closePath()
+
+                    if(age==lifespan){
+                        effects[i].dead = true
+                    }
+                }
+            }
+        }
+
+        function plot(){
+            function drawCircle(){
+            	var width = window.innerWidth;
+            	var height = window.innerHeight;
+            	circlectx.clearRect(0,0,width,height);
+            	circlectx.beginPath();
+            	circlectx.arc(width/2,height/2,plotradius,0,2*Math.PI);
+            	circlectx.stroke();
+            }
+        }
+
+        var speed = 5
+        canvas.addEventListener('mousedown',moveto)
+
+        var moving = false
+        var cancelled = false
+        var nextmove
+
+        function gameloop(){
+            render()
+            requestAnimationFrame(gameloop)
+        }
+        gameloop()
+
+        function moveto(e){
+            if(moving){
+                cancelled = true
+                nextmove = e
+                return
+            }else{
+                moving = true
+                cancelled = false
+            }
+
+            var offsetx = 0
+            var offsety = 0
+
+            var targetx = e.clientX + offsetx
+            var targety = e.clientY + offsety
+
+            var distancex = targetx - player.posx
+            var distancey = targety - player.posy
+
+            var distance = Math.sqrt(Math.pow(distancex,2)+Math.pow(distancey,2))
+
+            var A = Math.atan(distancex/distancey)
+
+            var stepx = Math.abs(speed*Math.sin(A))
+            var stepy = Math.abs(speed*Math.cos(A))
+
+            if(distancex<0){
+                stepx *= -1
+            }
+
+            if(distancey<0){
+                stepy *= -1
+            }
+
+            var steps = distance/speed
+            var i = 0
+
+            function frame(){
+                i++
+                player.posx += stepx
+                player.posy += stepy
+
+                //render()
+
+                if(cancelled){
+                    cancelled = false
+                    moving = false
+                    moveto(nextmove)
+                }else if(i<steps){
+                    requestAnimationFrame(frame)
+                }else{
+                    //plant tree
+                    trees.push({posx:player.posx,posy:player.posy})
+                    //render()
+
+                    //tree plant effect
+                    effects.push({
+                        age:0,
+                        lifespan:20,
+                        posx:player.posx,
+                        posy:player.posy
+                    })
+
+                    moving = false
+                }
+            }
+            frame()
+        }
+    </script>
+  </body>
+</html>
