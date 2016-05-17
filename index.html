@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title></title>
+    <title>PlantPlantPlant</title>
     <style media="screen">
         #sprite{
             display:none;
@@ -15,7 +15,17 @@
             background-color: black;
         }
         #canvas{
+            position:fixed;
+            top:10px;
+            left:10px;
+            z-index: 2;
+        }
+        #circlecanvas{
+            position:fixed;
+            top:10px;
+            left:10px;
             background-color: #dfd;
+            z-index: 1;
         }
         #plot_button{
             position: fixed;
@@ -27,17 +37,27 @@
             height:25px;
             background-color: #5f5;
             cursor:pointer;
+            z-index:3;
         }
         #plot_button:hover{
             background-color: #000;
             color: #5f5;
+        }
+        #densitydisplay{
+            position: fixed;
+            top:0px;
+            width:100%;
+            text-align: center;
+            z-index:3;
         }
     </style>
   </head>
   <body>
     <canvas id="canvas"></canvas>
     <canvas id="circlecanvas" ></canvas>
-    <div id="plot_button" onclick="plot()">Plot</div>
+    <div id="plot_button" onclick="checkDensity()">Plot</div>
+    <div id=densitydisplay></div>
+
     <script type="text/javascript">
         window.onload = window.onresize = resize
 
@@ -58,6 +78,13 @@
             posy:25
         }
 
+        var speed = 5
+        canvas.addEventListener('mousedown',moveto)
+
+        var moving = false
+        var cancelled = false
+        var nextmove
+
         function resize(){
             var clientWidth = window.innerWidth || window.clientWidth
             var clientHeight = window.innerHeight || window.clientHeight
@@ -69,6 +96,7 @@
             circlecanvas.height = clientHeight - 20
 
             render()
+            plot(clientWidth/2,clientHeight/2)
         }
 
         function render(){
@@ -114,23 +142,33 @@
             }
         }
 
-        function plot(){
-            function drawCircle(){
-            	var width = window.innerWidth;
-            	var height = window.innerHeight;
-            	circlectx.clearRect(0,0,width,height);
-            	circlectx.beginPath();
-            	circlectx.arc(width/2,height/2,plotradius,0,2*Math.PI);
-            	circlectx.stroke();
-            }
+        var plotradius = 200
+        var densitydisplay = document.getElementById('densitydisplay')
+
+        function checkDensity(){
+            var plotx = (Math.random()*(window.innerWidth-(plotradius*2)))+plotradius
+            var ploty = (Math.random()*(window.innerHeight-(plotradius*2)))+plotradius
+
+            densitydisplay.innerHTML = plot(plotx,ploty)
         }
 
-        var speed = 5
-        canvas.addEventListener('mousedown',moveto)
+        function plot(posx,posy){
+            circlectx.strokeStyle = '#8fa'
+        	circlectx.clearRect(0,0,window.innerWidth,window.innerHeight)
+        	circlectx.beginPath()
+        	circlectx.arc(posx,posy,plotradius,0,2*Math.PI)
+            circlectx.closePath()
+        	circlectx.stroke()
 
-        var moving = false
-        var cancelled = false
-        var nextmove
+            var density = 0
+            for (var i = 0; i < trees.length; i++) {
+                var distance = Math.sqrt(Math.pow(trees[i].posx - posx, 2) + Math.pow(trees[i].posy - posy, 2))
+                if(distance < plotradius){
+                    density++
+                }
+            }
+            return density
+        }
 
         function gameloop(){
             render()
